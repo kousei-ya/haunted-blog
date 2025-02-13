@@ -10,11 +10,7 @@ class BlogsController < ApplicationController
     @blogs = Blog.search(params[:term]).published.default_order
   end
 
-  def show
-    return unless @blog.secret? && @blog.user != current_user
-
-    raise ActiveRecord::RecordNotFound, '権限がありません'
-  end
+  def show; end
 
   def new
     @blog = Blog.new
@@ -49,7 +45,9 @@ class BlogsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.find(params[:id])
+    @blog = Blog.where(secret: false)
+                .or(Blog.where(user_id: current_user&.id))
+                .find_by!(id: params[:id])
   end
 
   def blog_params
@@ -59,8 +57,6 @@ class BlogsController < ApplicationController
   end
 
   def ensure_current_user
-    return unless current_user.id != @blog.user_id
-
-    raise ActiveRecord::RecordNotFound, '権限がありません'
+    @blog = Blog.find_by!(id: params[:id], user_id: current_user.id)
   end
 end
